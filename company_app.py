@@ -24,36 +24,55 @@ for ym in year_month_folders:
         file_dict[ym] = files
 
 # 운수사 목록 추출 (파일명에서 운수사 부분만 가져옴)
-company_set = set()
+company_dict = {}  # {회사명: 비밀번호} 저장
 for files in file_dict.values():
     for file in files:
-        company_set.add(file.split("_")[0])  # "01.강인교통_운전성향분석표..." → "01.강인교통" 추출
+        parts = file.split("_")[0]  # "01.강인교통" 추출
+        if "." in parts:
+            num, name = parts.split(".", 1)  # "01", "강인교통" 분리
+            password = f"5{num}"  # 비밀번호 설정: "501", "502" ...
+            company_dict[name] = password  # 딕셔너리에 저장
 
-company_list = sorted(company_set)
+company_list = sorted(company_dict.keys())
+
+# 기본 선택값 추가
+company_list.insert(0, "운수사를 선택해주세요")
 
 # 운수사 선택
-selected_company = st.sidebar.selectbox("운수사 선택", company_list)
+selected_company = st.sidebar.selectbox("운수사 선택", company_list, index=0)
 
-st.write(f"### {selected_company} 운전성향분석표 파일 목록")
+# 기본 선택값일 경우 안내 메시지만 출력
+if selected_company == "운수사를 선택해주세요":
+    st.write("### 🚗 운수사를 선택하고 비밀번호를 입력하세요.")
+else:
+    # 비밀번호 입력 필드 추가
+    entered_password = st.sidebar.text_input(f"{selected_company} 비밀번호 입력:", type="password")
 
-# 선택된 운수사의 파일 목록 표시
-for ym, files in file_dict.items():
-    # 해당 운수사 관련 파일만 필터링
-    filtered_files = [f for f in files if f.startswith(selected_company)]
-    
-    if filtered_files:
-        st.write(f"#### 📂 {ym}")  # 연/월 폴더명 표시
-        
-        for file in filtered_files:
-            file_path = os.path.join(BASE_DIR, ym, file)
+    # 올바른 비밀번호 확인
+    correct_password = company_dict.get(selected_company, "")
 
-            with open(file_path, "rb") as f:
-                file_data = f.read()
+    if entered_password == correct_password:
+        st.write(f"### {selected_company} 운전성향분석표 파일 목록")
 
-            st.download_button(
-                label=f"📥 {file}",
-                data=file_data,
-                file_name=file,
-                mime="application/octet-stream"
-            )
+        # 선택된 운수사의 파일 목록 표시
+        for ym, files in file_dict.items():
+            # 해당 운수사 관련 파일만 필터링
+            filtered_files = [f for f in files if selected_company in f]
+            
+            if filtered_files:
+                st.write(f"#### 📂 {ym}")  # 연/월 폴더명 표시
+                
+                for file in filtered_files:
+                    file_path = os.path.join(BASE_DIR, ym, file)
 
+                    with open(file_path, "rb") as f:
+                        file_data = f.read()
+
+                    st.download_button(
+                        label=f"📥 {file}",
+                        data=file_data,
+                        file_name=file,
+                        mime="application/octet-stream"
+                    )
+    else:
+        st.warning("🚫 올바른 비밀번호를 입력하세요.")
