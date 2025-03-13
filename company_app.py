@@ -14,6 +14,8 @@ if os.path.exists(company_info_path):
 else:
     company_list = []
 
+st.write(company_list)
+
 # 회사 선택
 if company_list:
     selected_company = st.sidebar.selectbox("운수사 선택", company_list)
