@@ -43,7 +43,7 @@ selected_company = st.sidebar.selectbox("운수사 선택", company_list, index=
 
 # 기본 선택값일 경우 안내 메시지만 출력
 if selected_company == "운수사를 선택해주세요":
-    st.write("### 🚗 운수사를 선택하고 비밀번호를 입력하세요.")
+    st.write("### 🚗 운수사를 선택해주세요.")
 else:
     # 비밀번호 입력 필드 추가
     entered_password = st.sidebar.text_input(f"{selected_company} 비밀번호 입력:", type="password")
