@@ -4,7 +4,8 @@ import pandas as pd
 
 # 기본 경로 설정 (실제 파일 경로로 변경 필요)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # 자동으로 현재 경로 인식
-company_info_path = os.path.join(BASE_DIR, "company_info.xlsx")
+st.write("엑셀 파일 경로:", BASE_DIR)
+company_info_path = "company_info.xlsx"  # 엑셀 파일이 있는 경로
 
 # 엑셀에서 회사 목록 불러오기
 if os.path.exists(company_info_path):
