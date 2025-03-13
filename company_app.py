@@ -4,17 +4,18 @@ import pandas as pd
 
 # 기본 경로 설정 (실제 파일 경로로 변경 필요)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # 자동으로 현재 경로 인식
-st.write("엑셀 파일 경로:", BASE_DIR)
-company_info_path = "company_info.xlsx"  # 엑셀 파일이 있는 경로
+# st.write("엑셀 파일 경로:", BASE_DIR)
+# company_info_path = "company_info.xlsx"  # 엑셀 파일이 있는 경로
 
 # 엑셀에서 회사 목록 불러오기
-if os.path.exists(company_info_path):
-    df = pd.read_excel(company_info_path)
-    company_list = df["운수사"].tolist()  # 'Company' 컬럼이 회사명이라고 가정
-else:
-    company_list = []
+# if os.path.exists(company_info_path):
+#     df = pd.read_excel(company_info_path)
+#     company_list = df["운수사"].tolist()  # 'Company' 컬럼이 회사명이라고 가정
+# else:
+#     company_list = []
 
-st.write(company_list)
+# 회사 목록 설정 (실제 폴더 구조에서 불러올 수도 있음)
+company_list = ["강인교통", "강인여객", "강화교통", "공영급행", "대인교통", "도영운수", "동화운수", "마니교통", "은혜교통", "미래교통", "미추홀교통", "부성여객", "삼환교통", "삼환운수", "선진여객", "성산여객", "성원운수", "세운교통", "송도버스", "시영운수", "신동아교통", "신화여객", "신흥교통", "영종운수", "원진운수", "인천교통공사", "인천스마트", "인천제물포교통", "청라교통", "청룡교통", "태양여객", "해성운수"]
 
 # 회사 선택
 if company_list:
