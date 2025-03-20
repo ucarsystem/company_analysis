@@ -41,6 +41,12 @@ company_list.insert(0, "운수사를 선택해주세요")
 # 운수사 선택
 selected_company = st.sidebar.selectbox("운수사 선택", company_list, index=0)
 
+st.markdown("""
+    <a href='https://companyid-ulvnkmsoaczretoz8tashv.streamlit.app/' target='_blank' 
+    style='display: inline-block; padding: 10px 20px; background-color: green; color: white; font-weight: bold; 
+    text-align: center; text-decoration: none; border-radius: 5px;'>운전자 ID조회하기</a>
+""", unsafe_allow_html=True)
+
 # 기본 선택값일 경우 안내 메시지만 출력
 if selected_company == "운수사를 선택해주세요":
     st.write("### 🚗 운수사를 선택해주세요.")
