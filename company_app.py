@@ -1,84 +1,96 @@
 import streamlit as st
-import os
 import pandas as pd
 
-# 기본 경로 설정 (실제 파일 경로로 변경 필요)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # 자동으로 현재 경로 인식
+# =====================
+# 📦 데이터 불러오기 & 처리
+# =====================
+@st.cache_data
+def load_and_process_data():
+    df = pd.read_excel("company_total.xlsx", sheet_name="차량별")
 
-# 회사 목록 설정 (실제 폴더 구조에서 불러올 수도 있음)
-company_list = ["강인교통", "강인여객", "강화교통", "공영급행", "대인교통", "도영운수", "동화운수", "마니교통", "은혜교통", "미래교통", "미추홀교통", "부성여객", "삼환교통", "삼환운수", "선진여객", "성산여객", "성원운수", "세운교통", "송도버스", "시영운수", "신동아교통", "신화여객", "신흥교통", "영종운수", "원진운수", "인천교통공사", "인천스마트", "인천제물포교통", "청라교통", "청룡교통", "태양여객", "해성운수"]
+    # 컬럼명 매핑
+    df = df.rename(columns={
+        '주행거리(km)': '주행거리',
+        '연료소모량(m3': '연료소모량',
+        '웜업시간': '웜업시간',
+        '공회전시간': '공회전시간',
+        '주행시간': '주행시간',
+        '탄력운전 거리(km)': '탄력운전거리',
+        '평균속도': '평균속도',
+        '급가속횟수': '급가속',
+        '급감속횟수': '급감속',
+        '속도필터': '속도필터'
+    })
 
-# 년/월 폴더 목록 가져오기
-if os.path.exists(BASE_DIR):
-    year_month_folders = sorted([f for f in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, f))])
-else:
-    year_month_folders = []
+    # 속도필터 0만 필터링 (급가속/급감속 계산용)
+    df_speed0 = df[df['속도필터'] == 0]
 
-# 모든 년/월 폴더에서 파일 수집
-file_dict = {}
+    # 일반 그룹 집계
+    grouped = df.groupby(['년월', '운수사']).agg({
+        '주행거리': 'sum',
+        '연료소모량': 'sum',
+        '웜업시간': 'sum',
+        '공회전시간': 'sum',
+        '주행시간': 'sum',
+        '탄력운전거리': 'sum',
+        '평균속도': 'mean'
+    }).reset_index()
 
-for ym in year_month_folders:
-    folder_path = os.path.join(BASE_DIR, ym)
-    if os.path.exists(folder_path):
-        files = [f for f in os.listdir(folder_path) if f.endswith(".xlsx") or f.endswith(".csv")]
-        file_dict[ym] = files
+    # 속도필터=0 그룹 집계
+    aggr_speed0 = df_speed0.groupby(['년월', '운수사']).agg({
+        '급가속': 'sum',
+        '급감속': 'sum',
+        '주행거리': 'sum'
+    }).rename(columns={'주행거리': '주행거리_속도0'}).reset_index()
 
-# 운수사 목록 추출 (파일명에서 운수사 부분만 가져옴)
-company_dict = {}  # {회사명: 비밀번호} 저장
-for files in file_dict.values():
-    for file in files:
-        parts = file.split("_")[0]  # "01.강인교통" 추출
-        if "." in parts:
-            num, name = parts.split(".", 1)  # "01", "강인교통" 분리
-            password = f"5{num}"  # 비밀번호 설정: "501", "502" ...
-            company_dict[name] = password  # 딕셔너리에 저장
+    # 병합
+    result = pd.merge(grouped, aggr_speed0, on=['년월', '운수사'], how='left')
 
-company_list = sorted(company_dict.keys())
+    # 계산식 적용
+    result['달성율'] = result['주행거리'] / result['연료소모량']
+    result['웜업률'] = result['웜업시간'] / result['주행시간']
+    result['공회전율'] = result['공회전시간'] / result['주행시간']
+    result['탄력운전비율'] = result['탄력운전거리'] / result['주행거리']
+    result['급가속(회/100km)'] = result['급가속'] * 100 / result['주행거리_속도0']
+    result['급감속(회/100km)'] = result['급감속'] * 100 / result['주행거리_속도0']
 
-# 기본 선택값 추가
-company_list.insert(0, "운수사를 선택해주세요")
+    return result[['년월', '운수사', '달성율', '웜업률', '공회전율', '탄력운전비율', '평균속도', '급가속(회/100km)', '급감속(회/100km)']]
 
-# 운수사 선택
-selected_company = st.sidebar.selectbox("운수사 선택", company_list, index=0)
+# =====================
+# 🚀 Streamlit UI
+# =====================
+st.set_page_config(page_title="운수사 관리자 분석", layout="wide")
 
-st.markdown("""
-    <a href='https://companyid-ulvnkmsoaczretoz8tashv.streamlit.app/' target='_blank' 
-    style='display: inline-block; padding: 10px 20px; background-color: green; color: white; font-weight: bold; 
-    text-align: center; text-decoration: none; border-radius: 5px;'>운전자 ID조회하기</a>
-""", unsafe_allow_html=True)
+st.title("🧑‍💼 운수사 관리자용 분석 대시보드")
+st.markdown("운수사별로 월별 주요 항목들을 비교하고 순위를 확인할 수 있습니다.")
 
-# 기본 선택값일 경우 안내 메시지만 출력
-if selected_company == "운수사를 선택해주세요":
-    st.write("### 🚗 운수사를 선택해주세요.")
-else:
-    # 비밀번호 입력 필드 추가
-    entered_password = st.sidebar.text_input(f"{selected_company} 비밀번호 입력:", type="password")
+# 데이터 로딩
+df = load_and_process_data()
 
-    # 올바른 비밀번호 확인
-    correct_password = company_dict.get(selected_company, "")
+# UI 선택 영역
+yearmonth_options = sorted(df["년월"].unique())
+metric_options = ['달성율', '웜업률', '공회전율', '탄력운전비율', '평균속도', '급가속(회/100km)', '급감속(회/100km)']
 
-    if entered_password == correct_password:
-        st.write(f"### {selected_company} 운전성향분석표 파일 목록")
+selected_ym = st.selectbox("📅 년월 선택", yearmonth_options)
+selected_metric = st.selectbox("📊 항목 선택", metric_options)
 
-        # 선택된 운수사의 파일 목록 표시
-        for ym, files in file_dict.items():
-            # 해당 운수사 관련 파일만 필터링
-            filtered_files = [f for f in files if selected_company in f]
-            
-            if filtered_files:
-                st.write(f"#### 📂 {ym}")  # 연/월 폴더명 표시
-                
-                for file in filtered_files:
-                    file_path = os.path.join(BASE_DIR, ym, file)
+# 데이터 필터링 및 정렬
+filtered = df[df["년월"] == selected_ym].copy()
 
-                    with open(file_path, "rb") as f:
-                        file_data = f.read()
+# 📌 항목별 정렬 방향 반영
+ascending_map = {
+    '달성율': False,
+    '탄력운전비율': False,
+    '평균속도': False,
+    '웜업률': True,
+    '공회전율': True,
+    '급가속(회/100km)': True,
+    '급감속(회/100km)': True
+}
+ascending = ascending_map.get(selected_metric, False)
+filtered["순위"] = filtered[selected_metric].rank(ascending=ascending, method="min").astype(int)
+filtered = filtered.sort_values("순위")
 
-                    st.download_button(
-                        label=f"📥 {file}",
-                        data=file_data,
-                        file_name=file,
-                        mime="application/octet-stream"
-                    )
-    else:
-        st.warning("🚫 올바른 비밀번호를 입력하세요.")
+# 결과 출력
+st.markdown(f"### {selected_ym}월 - **{selected_metric}** 기준 운수사 순위")
+st.dataframe(filtered[["운수사", selected_metric, "순위"]].reset_index(drop=True), use_container_width=True)
