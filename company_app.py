@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.graph_objects as go
 
 # =====================
 # 📦 데이터 불러오기 & 처리
@@ -34,7 +35,7 @@ def load_and_process_data():
         '주행시간': 'sum',
         '탄력운전거리': 'sum',
         '평균속도': 'mean',
-        '전체달성율' : 'sum'
+        '운수사달성율' : 'sum'
     }).reset_index()
 
     # 속도필터=0 그룹 집계
@@ -48,7 +49,7 @@ def load_and_process_data():
     result = pd.merge(grouped, aggr_speed0, on=['년월', '운수사'], how='left')
 
     # 계산식 적용
-    result['달성율'] = result['전체달성율']
+    result['달성율'] = result['운수사달성율']
     result['연비'] = result['주행거리'] / result['연료소모량']
     result['웜업률'] = result['웜업시간'] / result['주행시간']
     result['공회전율'] = result['공회전시간'] / result['주행시간']
@@ -74,7 +75,7 @@ def get_color_by_rank(rank):
 # =====================
 st.set_page_config(page_title="운수사 관리자 분석", layout="wide")
 
-st.title("🧑 운수사 관리자용 분석 대시보드")
+st.title("📊 운수사 관리자용 분석 대시보드")
 
 # 데이터 로딩
 df = load_and_process_data()
@@ -111,9 +112,35 @@ for i, (metric, _) in enumerate(metric_info.items()):
     with cols[i]:
         st.markdown(f"""
         <div style='text-align:center; padding:10px; background:{color}; border-radius:50%; 
-                     width:80px; height:80px; display:flex; flex-direction:column; 
+                     width:100px; height:100px; display:flex; flex-direction:column; 
                      justify-content:center; align-items:center; margin:auto;'>
             <b style='font-size:24px;'>{rank}위</b>
             <div style='font-size:12px;'>{metric}</div>
         </div>
         """, unsafe_allow_html=True)
+
+# =====================
+# 인천 전체 보고서 보기 구조 (항목별로 다시 계산한 평균)
+# =====================
+st.markdown("---")
+st.markdown(f"### 📈 {selected_company} vs 인천 전체 평균 (지표별 추이)")
+
+compare_metrics = ['웜업률', '공회전율', '급감속(회/100km)', '평균속도']
+
+# 인천 전체 지표 재계산 (월별로 다시 계산)
+df_incheon = df.groupby('년월').apply(lambda x: pd.Series({
+    '웜업률': x['웜업시간'].sum() / x['주행시간'].sum(),
+    '공회전율': x['공회전시간'].sum() / x['주행시간'].sum(),
+    '급감속(회/100km)': x[x['속도필터'] == 0]['급감속(회/100km)'].sum() * 100 / x[x['속도필터'] == 0]['주행거리'].sum(),
+    '평균속도': x['평균속도'].mean()
+})).reset_index()
+
+df_target = df[df['운수사'] == selected_company][['년월'] + compare_metrics]
+
+# 선 그래프 출력
+for metric in compare_metrics:
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df_incheon['년월'], y=df_incheon[metric], mode='lines+markers', name='인천 평균'))
+    fig.add_trace(go.Scatter(x=df_target['년월'], y=df_target[metric], mode='lines+markers', name=selected_company))
+    fig.update_layout(title=f"📊 {metric} 추이", xaxis_title='년월', yaxis_title=metric)
+    st.plotly_chart(fig, use_container_width=True)
