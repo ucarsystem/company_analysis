@@ -74,7 +74,7 @@ def get_color_by_rank(rank):
 # =====================
 st.set_page_config(page_title="운수사 관리자 분석", layout="wide")
 
-st.title("🧑‍💼 운수사 관리자용 분석 대시보드")
+st.title("🧑 운수사 관리자용 분석 대시보드")
 
 # 데이터 로딩
 df = load_and_process_data()
