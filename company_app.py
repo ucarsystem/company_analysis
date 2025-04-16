@@ -59,40 +59,61 @@ def load_and_process_data():
     return result[['년월', '운수사', '달성율', '웜업률', '공회전율', '탄력운전비율', '평균속도', '급가속(회/100km)', '급감속(회/100km)']]
 
 # =====================
+# 각 항목 순위 UI 제출
+# =====================
+def get_color_by_rank(rank):
+    if rank <= 5:
+        return "#a8e6a2"  # 초록
+    elif rank >= 26:
+        return "#f58a8a"  # 빨간
+    else:
+        return "#cce5ff"  # 포장색
+
+# =====================
 # 🚀 Streamlit UI
 # =====================
 st.set_page_config(page_title="운수사 관리자 분석", layout="wide")
 
 st.title("🧑‍💼 운수사 관리자용 분석 대시보드")
-st.markdown("운수사별로 월별 주요 항목들을 비교하고 순위를 확인할 수 있습니다.")
 
 # 데이터 로딩
 df = load_and_process_data()
 
 # UI 선택 영역
-yearmonth_options = sorted(df["년월"].unique())
-metric_options = ['달성율', '웜업률', '공회전율', '탄력운전비율', '평균속도', '급가속(회/100km)', '급감속(회/100km)']
+selected_month = st.selectbox("📅 년월 선택", sorted(df['년월'].unique()))
+selected_company = st.selectbox("🚍 운수사 선택", sorted(df['운수사'].unique()))
 
-selected_ym = st.selectbox("📅 년월 선택", yearmonth_options)
-selected_metric = st.selectbox("📊 항목 선택", metric_options)
-
-# 데이터 필터링 및 정렬
-filtered = df[df["년월"] == selected_ym].copy()
-
-# 📌 항목별 정렬 방향 반영
-ascending_map = {
+# 항목별 정렬 기준 정의
+metric_info = {
     '달성율': False,
-    '탄력운전비율': False,
-    '평균속도': False,
     '웜업률': True,
     '공회전율': True,
+    '탄력운전비율': False,
+    '평균속도': False,
     '급가속(회/100km)': True,
     '급감속(회/100km)': True
 }
-ascending = ascending_map.get(selected_metric, False)
-filtered["순위"] = filtered[selected_metric].rank(ascending=ascending, method="min").astype(int)
-filtered = filtered.sort_values("순위")
 
-# 결과 출력
-st.markdown(f"### {selected_ym}월 - **{selected_metric}** 기준 운수사 순위")
-st.dataframe(filtered[["운수사", selected_metric, "순위"]].reset_index(drop=True), use_container_width=True)
+# 선택된 년월 데이터 필터링 후 순위 계산
+df_month = df[df['년월'] == selected_month].copy()
+for col, asc in metric_info.items():
+    df_month[f"{col}_순위"] = df_month[col].rank(ascending=asc, method="min")
+
+# 선택 운수사 데이터 추출
+target = df_month[df_month['운수사'] == selected_company].iloc[0]
+
+# 결과 UI 출력
+st.markdown(f"### 🚩 {selected_month}월 - **{selected_company}** 항목별 순위")
+cols = st.columns(len(metric_info))
+for i, (metric, _) in enumerate(metric_info.items()):
+    rank = int(target[f"{metric}_순위"])
+    color = get_color_by_rank(rank)
+    with cols[i]:
+        st.markdown(f"""
+        <div style='text-align:center; padding:10px; background:{color}; border-radius:50%; 
+                     width:80px; height:80px; display:flex; flex-direction:column; 
+                     justify-content:center; align-items:center; margin:auto;'>
+            <b style='font-size:24px;'>{rank}위</b>
+            <div style='font-size:12px;'>{metric}</div>
+        </div>
+        """, unsafe_allow_html=True)
