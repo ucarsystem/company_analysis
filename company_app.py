@@ -33,7 +33,8 @@ def load_and_process_data():
         '공회전시간': 'sum',
         '주행시간': 'sum',
         '탄력운전거리': 'sum',
-        '평균속도': 'mean'
+        '평균속도': 'mean',
+        '전체달성율' : 'sum'
     }).reset_index()
 
     # 속도필터=0 그룹 집계
@@ -47,7 +48,8 @@ def load_and_process_data():
     result = pd.merge(grouped, aggr_speed0, on=['년월', '운수사'], how='left')
 
     # 계산식 적용
-    result['달성율'] = result['주행거리'] / result['연료소모량']
+    result['달성율'] = result['전체달성율']
+    result['연비'] = result['주행거리'] / result['연료소모량']
     result['웜업률'] = result['웜업시간'] / result['주행시간']
     result['공회전율'] = result['공회전시간'] / result['주행시간']
     result['탄력운전비율'] = result['탄력운전거리'] / result['주행거리']
