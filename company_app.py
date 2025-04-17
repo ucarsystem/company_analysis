@@ -132,13 +132,18 @@ df_target = df_company[df_company['운수사'] == selected_company][['년월_lab
 df_incheon = df_incheon[['년월_label'] + compare_metrics]
 
 for metric in compare_metrics:
+    y_unit = "%" if metric in ['웜업률', '공회전율'] else ""
+    df_target[metric] = df_target[metric] * 100 if y_unit else df_target[metric]
+    df_incheon[metric] = df_incheon[metric] * 100 if y_unit else df_incheon[metric]
+
+    df_target[metric] = df_target[metric].round(2)
+    df_incheon[metric] = df_incheon[metric].round(2)
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=df_incheon['년월_label'], y=df_incheon[metric], mode='lines+markers', name='인천 평균'))
     fig.add_trace(go.Scatter(x=df_target['년월_label'], y=df_target[metric], mode='lines+markers', name=selected_company))
-    fig.update_layout(title=f"📊 {metric} 추이", xaxis_title='년월', yaxis_title=metric)
+    fig.update_layout(title=f"📊 {metric} 추이", xaxis_title='년월', yaxis_title=metric + y_unit)
     st.plotly_chart(fig, use_container_width=True)
-
 # @st.cache_data
 # def load_and_process_data(standard):
 #     df = pd.read_excel("company_total.xlsx", sheet_name="차량별")
