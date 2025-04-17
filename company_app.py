@@ -128,10 +128,11 @@ st.markdown("---")
 st.markdown(f"### 📈 {selected_company} vs 인천 전체 평균 (지표별 추이)")
 
 compare_metrics = ['웜업률', '공회전율', '급감속(회/100km)', '평균속도']
-df_target = df_company[df_company['운수사'] == selected_company][['년월'] + compare_metrics]
+df_target = df_company[df_company['운수사'] == selected_company][['년월_label'] + compare_metrics]
 df_incheon = df_incheon[['년월_label'] + compare_metrics]
 
 for metric in compare_metrics:
+
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=df_incheon['년월_label'], y=df_incheon[metric], mode='lines+markers', name='인천 평균'))
     fig.add_trace(go.Scatter(x=df_target['년월_label'], y=df_target[metric], mode='lines+markers', name=selected_company))
