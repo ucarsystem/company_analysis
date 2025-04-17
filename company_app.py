@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 # 📦 데이터 불러오기 & 처리
 # =====================
 @st.cache_data
-def load_and_process_data():
+def load_and_process_data(standard):
     df = pd.read_excel("company_total.xlsx", sheet_name="차량별")
 
     # 컬럼명 매핑
@@ -27,7 +27,7 @@ def load_and_process_data():
     df_speed0 = df[df['속도필터'] == 0]
 
     # 일반 그룹 집계
-    grouped = df.groupby(['년월', '운수사']).agg({
+    grouped = df.groupby(standard).agg({
         '주행거리': 'sum',
         '연료소모량': 'sum',
         '웜업시간': 'sum',
@@ -39,14 +39,14 @@ def load_and_process_data():
     }).reset_index()
 
     # 속도필터=0 그룹 집계
-    aggr_speed0 = df_speed0.groupby(['년월', '운수사']).agg({
+    aggr_speed0 = df_speed0.groupby(standard).agg({
         '급가속': 'sum',
         '급감속': 'sum',
         '주행거리': 'sum'
     }).rename(columns={'주행거리': '주행거리_속도0'}).reset_index()
 
     # 병합
-    result = pd.merge(grouped, aggr_speed0, on=['년월', '운수사'], how='left')
+    result = pd.merge(grouped, aggr_speed0, on=standard, how='left')
 
     # 계산식 적용
     result['달성율'] = result['운수사달성율']
@@ -78,7 +78,7 @@ st.set_page_config(page_title="운수사 관리자 분석", layout="wide")
 st.title("📊 운수사 관리자용 분석 대시보드")
 
 # 데이터 로딩
-df = load_and_process_data()
+df = load_and_process_data(['년월', '운수사'])
 
 # UI 선택 영역
 selected_month = st.selectbox("📅 년월 선택", sorted(df['년월'].unique()))
@@ -126,16 +126,13 @@ st.markdown("---")
 st.markdown(f"### 📈 {selected_company} vs 인천 전체 평균 (지표별 추이)")
 
 compare_metrics = ['웜업률', '공회전율', '급감속(회/100km)', '평균속도']
-
 # 인천 전체 지표 재계산 (월별로 다시 계산)
-df_incheon = df.groupby('년월').apply(lambda x: pd.Series({
-    '웜업률': x['웜업시간'].sum() / x['주행시간'].sum(),
-    '공회전율': x['공회전시간'].sum() / x['주행시간'].sum(),
-    '급감속(회/100km)': x[x['속도필터'] == 0]['급감속(회/100km)'].sum() * 100 / x[x['속도필터'] == 0]['주행거리'].sum(),
-    '평균속도': x['평균속도'].mean()
-})).reset_index()
+
+df_incheon = load_and_process_data(['년월'])
+df_incheon = df_incheon[['년월'] + compare_metrics]
 
 df_target = df[df['운수사'] == selected_company][['년월'] + compare_metrics]
+
 
 # 선 그래프 출력
 for metric in compare_metrics:
