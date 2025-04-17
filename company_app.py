@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import io
-
+#페이지 설정 (가장 맨위에 호출시켜야함!)
+st.set_page_config(page_title="운수사 관리자 페이지", layout="wide")
 # =====================
 # 파이스트로 버튼 hover 핸드와 css 설정
 # =====================
@@ -27,9 +28,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-
-# 페이지 설정
-st.set_page_config(page_title="운수사 관리자 페이지", layout="wide")
 
 #메뉴 생성
 menu_items = [
