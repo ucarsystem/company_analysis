@@ -1,14 +1,55 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import io
 
 # =====================
 # 📦 데이터 불러오기 & 처리
 # =====================
+import streamlit as st
+import pandas as pd
 
+# 페이지 설정
+st.set_page_config(page_title="운수사 관리자 페이지", layout="wide")
+
+# 사이드바 메뉴
+st.sidebar.title("📋 메뉴")
+menu = st.sidebar.radio(
+    "이동할 항목을 선택하세요:",
+    [
+        "1. 특별관리",
+        "2. 대시보드",
+        "3. 운전성향분석표",
+        "4. 집중관리명단",
+        "5. 인증현황",
+        "6. ID 조회",
+        "7. 차량정보확인",
+        "8. A/S 현황",
+        "9. 운전자등급",
+        "10. 개별분석표"
+    ]
+)
+
+# 운수사 선택
+st.sidebar.title("🏢 운수사 선택")
+selected_company = st.sidebar.selectbox("운수사를 선택하세요", 
+                                        ["강인교통", "강인여객", "강화교통", "강인여객", "공영급행", "대인교통", "도영운수", "동화운수", "마니교통", "은혜교통", "미래교통", "미추홀교통", "부성여객", "삼환교통", "삼환운수", "선진여객", "성산여객", "성원운수", "세운교통", "송도버스", "시영운수", "신동아교통", "신화여객", "신흥교통", "영종운수", "원진운수", "인천교통공사", "인천스마트", "인천제물포교통", "청라교통", "청룡교통", "태양여객", "해성운수"])  # 실제 값으로 변경 필요
+
+# 엑셀 파일 로딩 함수
 @st.cache_data
-def load_data():
-    df = pd.read_excel("company_total.xlsx", sheet_name="차량별")
+def load_excel_data(file_path):
+    xls = pd.ExcelFile(file_path)
+    sheet_dict = {sheet_name: xls.parse(sheet_name) for sheet_name in xls.sheet_names}
+    return sheet_dict
+
+# 엑셀 파일 경로 설정
+excel_file_path = "company_total.xlsx"  
+data_sheets = load_excel_data(excel_file_path) #시트명으로 들어가짐 ex. data_sheets['차량별']
+
+# 함수
+@st.cache_data
+# 컬럼명 재설정
+def load_data(df):
 
     df = df.rename(columns={
         '주행거리(km)': '주행거리',
@@ -24,7 +65,7 @@ def load_data():
     })
     return df
 
-@st.cache_data
+# 속도필터 0인것만 계산, 어떤 데이터로 그룹을 묶는지 설정하는 함수
 def process_data(df, group_cols):
     df_speed0 = df[df['속도필터'] == 0]
 
@@ -71,212 +112,229 @@ def get_color_by_rank(rank):
     else:
         return "#cce5ff"  # 포장색
 
-# =====================
-# 🚀 Streamlit UI
-# =====================
-st.set_page_config(page_title="운수사 관리자 분석", layout="wide")
-st.title("📊 운수사 관리자용 분석 대시보드")
 
-# 데이터 로딩
-raw_df = load_data()
-df_company = process_data(raw_df, ['년월', '운수사'])
-df_incheon = process_data(raw_df, ['년월'])
+# 페이지 타이틀
+st.title("🚍 운수사 관리자 페이지")
 
-# UI 선택 영역
-selected_month = st.selectbox("📅 년월 선택", sorted(df_company['년월'].unique()))
-selected_company = st.selectbox("🚍 운수사 선택", sorted(df_company['운수사'].unique()))
+# 각 메뉴별 페이지 처리
+if menu == "1. 특별관리":
+    st.header("🔥 특별관리")
+    # 예시: st.dataframe(data_sheets["차량별"])
 
-# 항목별 정렬 기준 정의
-metric_info = {
-    '달성율': False,
-    '웜업률': True,
-    '공회전율': True,
-    '탄력운전비율': False,
-    '평균속도': False,
-    '급가속(회/100km)': True,
-    '급감속(회/100km)': True
-}
+elif menu == "2. 대시보드":
+    # st.set_page_config(page_title="운수사 관리자 분석", layout="wide")
+    st.header("📊 대시보드")
+    st.title("📊 운수사 관리자용 분석 대시보드")
 
-# 선택된 년월 데이터 필터링 후 순위 계산
-df_month = df_company[df_company['년월'] == selected_month].copy()
-for col, asc in metric_info.items():
-    df_month[f"{col}_순위"] = df_month[col].rank(ascending=asc, method="min")
+    # 데이터 로딩
+    raw_df = load_data(data_sheets["차량별"])
+    df_company = process_data(raw_df, ['년월', '운수사'])
+    df_incheon = process_data(raw_df, ['년월'])
 
-# 선택 운수사 데이터 추출
-target = df_month[df_month['운수사'] == selected_company].iloc[0]
+    # UI 선택 영역
+    selected_month = st.selectbox("📅 년월 선택", sorted(df_company['년월'].unique()))
+    selected_company = st.selectbox("🚍 운수사 선택", sorted(df_company['운수사'].unique()))
 
-# 결과 UI 출력
-st.markdown(f"### 🚩 {selected_month}월 - **{selected_company}** 항목별 순위")
-cols = st.columns(len(metric_info))
-for i, (metric, _) in enumerate(metric_info.items()):
-    rank = int(target[f"{metric}_순위"])
-    color = get_color_by_rank(rank)
-    with cols[i]:
-        st.markdown(f"""
-        <div style='text-align:center; padding:10px; background:{color}; border-radius:50%; 
-                     width:120px; height:120px; display:flex; flex-direction:column; 
-                     justify-content:center; align-items:center; margin:auto;'>
-            <b style='font-size:24px;'>{rank}위</b>
-            <div style='font-size:12px;'>{metric}</div>
-        </div>
-        """, unsafe_allow_html=True)
+    # 항목별 정렬 기준 정의
+    metric_info = {
+        '달성율': False,
+        '웜업률': True,
+        '공회전율': True,
+        '탄력운전비율': False,
+        '평균속도': False,
+        '급가속(회/100km)': True,
+        '급감속(회/100km)': True
+    }
 
-# =====================
-# 인천 전체 평균 추이 비교
-# =====================
-st.markdown("---")
-st.markdown(f"### 📈 {selected_company} vs 인천 전체 평균 (지표별 추이)")
+    # 선택된 년월 데이터 필터링 후 순위 계산
+    df_month = df_company[df_company['년월'] == selected_month].copy()
+    for col, asc in metric_info.items():
+        df_month[f"{col}_순위"] = df_month[col].rank(ascending=asc, method="min")
 
-compare_metrics = ['웜업률', '공회전율', '급감속(회/100km)', '평균속도']
-df_target = df_company[df_company['운수사'] == selected_company][['년월_label'] + compare_metrics]
-df_incheon = df_incheon[['년월_label'] + compare_metrics]
+    # 선택 운수사 데이터 추출
+    target = df_month[df_month['운수사'] == selected_company].iloc[0]
 
-for metric in compare_metrics:
-    y_unit = "%" if metric in ['웜업률', '공회전율'] else ""
-    df_target[metric] = df_target[metric] * 100 if y_unit else df_target[metric]
-    df_incheon[metric] = df_incheon[metric] * 100 if y_unit else df_incheon[metric]
+    # 결과 UI 출력
+    st.markdown(f"### 🚩 {selected_month}월 - **{selected_company}** 항목별 순위")
+    cols = st.columns(len(metric_info))
+    for i, (metric, _) in enumerate(metric_info.items()):
+        rank = int(target[f"{metric}_순위"])
+        color = get_color_by_rank(rank)
+        with cols[i]:
+            st.markdown(f"""
+            <div style='text-align:center; padding:10px; background:{color}; border-radius:50%; 
+                        width:120px; height:120px; display:flex; flex-direction:column; 
+                        justify-content:center; align-items:center; margin:auto;'>
+                <b style='font-size:24px;'>{rank}위</b>
+                <div style='font-size:12px;'>{metric}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-    df_target[metric] = df_target[metric].round(2)
-    df_incheon[metric] = df_incheon[metric].round(2)
+    # =====================
+    # 인천 전체 평균 추이 비교
+    # =====================
+    st.markdown("---")
+    st.markdown(f"### 📈 {selected_company} vs 인천 전체 평균 (지표별 추이)")
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df_incheon['년월_label'], y=df_incheon[metric], mode='lines+markers', name='인천 평균'))
-    fig.add_trace(go.Scatter(x=df_target['년월_label'], y=df_target[metric], mode='lines+markers', name=selected_company))
-    fig.update_layout(title=f"📊 {metric} 추이", xaxis_title='년월', yaxis_title=metric + y_unit)
-    st.plotly_chart(fig, use_container_width=True)
-# @st.cache_data
-# def load_and_process_data(standard):
-#     df = pd.read_excel("company_total.xlsx", sheet_name="차량별")
+    compare_metrics = ['웜업률', '공회전율', '급감속(회/100km)', '평균속도']
+    df_target = df_company[df_company['운수사'] == selected_company][['년월_label'] + compare_metrics]
+    df_incheon = df_incheon[['년월_label'] + compare_metrics]
 
-#     # 컬럼명 매핑
-#     df = df.rename(columns={
-#         '주행거리(km)': '주행거리',
-#         '연료소모량(m3': '연료소모량',
-#         '웜업시간': '웜업시간',
-#         '공회전시간': '공회전시간',
-#         '주행시간': '주행시간',
-#         '탄력운전 거리(km)': '탄력운전거리',
-#         '평균속도': '평균속도',
-#         '급가속횟수': '급가속',
-#         '급감속횟수': '급감속',
-#         '속도필터': '속도필터'
-#     })
+    for metric in compare_metrics:
+        y_unit = "%" if metric in ['웜업률', '공회전율'] else ""
+        df_target[metric] = df_target[metric] * 100 if y_unit else df_target[metric]
+        df_incheon[metric] = df_incheon[metric] * 100 if y_unit else df_incheon[metric]
 
-#     # 속도필터 0만 필터링 (급가속/급감속 계산용)
-#     df_speed0 = df[df['속도필터'] == 0]
+        df_target[metric] = df_target[metric].round(2)
+        df_incheon[metric] = df_incheon[metric].round(2)
 
-#     # 일반 그룹 집계
-#     grouped = df.groupby(standard).agg({
-#         '주행거리': 'sum',
-#         '연료소모량': 'sum',
-#         '웜업시간': 'sum',
-#         '공회전시간': 'sum',
-#         '주행시간': 'sum',
-#         '탄력운전거리': 'sum',
-#         '평균속도': 'mean',
-#         '운수사달성율' : 'sum'
-#     }).reset_index()
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df_incheon['년월_label'], y=df_incheon[metric], mode='lines+markers', name='인천 평균'))
+        fig.add_trace(go.Scatter(x=df_target['년월_label'], y=df_target[metric], mode='lines+markers', name=selected_company))
+        fig.update_layout(title=f"📊 {metric} 추이", xaxis_title='년월', yaxis_title=metric + y_unit)
+        st.plotly_chart(fig, use_container_width=True)
 
-#     # 속도필터=0 그룹 집계
-#     aggr_speed0 = df_speed0.groupby(standard).agg({
-#         '급가속': 'sum',
-#         '급감속': 'sum',
-#         '주행거리': 'sum'
-#     }).rename(columns={'주행거리': '주행거리_속도0'}).reset_index()
+    
+elif menu == "3. 운전성향분석표":
+    st.header("📑 운전성향분석표")
+    # 예시: st.dataframe(data_sheets["운전자별"])
 
-#     # 병합
-#     result = pd.merge(grouped, aggr_speed0, on=standard, how='left')
+elif menu == "4. 집중관리명단":
+    st.header("⚠ 집중관리명단")
+    # 예시: st.dataframe(data_sheets["집중관리명단"])
 
-#     # 계산식 적용
-#     result['달성율'] = result['운수사달성율']
-#     result['연비'] = result['주행거리'] / result['연료소모량']
-#     result['웜업률'] = result['웜업시간'] / result['주행시간']
-#     result['공회전율'] = result['공회전시간'] / result['주행시간']
-#     result['탄력운전비율'] = result['탄력운전거리'] / result['주행거리']
-#     result['급가속(회/100km)'] = result['급가속'] * 100 / result['주행거리_속도0']
-#     result['급감속(회/100km)'] = result['급감속'] * 100 / result['주행거리_속도0']
+elif menu == "5. 인증현황":
+    st.header("🏆 인증현황")
 
-#     return result[['년월', '운수사', '달성율', '웜업률', '공회전율', '탄력운전비율', '평균속도', '급가속(회/100km)', '급감속(회/100km)']]
+    df_24_cert = data_sheets["5. 24년인증현황"]
+    df_driver = data_sheets["운전자별"]
 
-# # =====================
-# # 각 항목 순위 UI 제출
-# # =====================
-# def get_color_by_rank(rank):
-#     if rank <= 5:
-#         return "#a8e6a2"  # 초록
-#     elif rank >= 26:
-#         return "#f58a8a"  # 빨간
-#     else:
-#         return "#cce5ff"  # 포장색
+    # ✅ 2024년 인증자 명단
+    st.subheader("⭐ 2024년 인증 대상자 명단 ⭐")
+    df_24_filtered = df_24_cert[df_24_cert["운수사"] == selected_company]
+    if not df_24_filtered.empty:
+        st.dataframe(df_24_filtered[["운수사", "성명", "아이디"]], use_container_width=True)
+    else:
+        st.info("해당 운수사에서 2024년 인증 대상자가 없습니다.")
 
-# # =====================
-# # 🚀 Streamlit UI
-# # =====================
-# st.set_page_config(page_title="운수사 관리자 분석", layout="wide")
+    # ✅ 2025년 인증 대상자 분석
+    st.subheader("⭐ 2025년 분기별 인증 대상자 명단 ⭐")
 
-# st.title("📊 운수사 관리자용 분석 대시보드")
+    # 1. 년월 → 년/월/분기 분리
+    df_25 = df_driver.copy()
+    df_25["년"] = df_25["년월"].astype(str).str[:2].astype(int)
+    df_25["월"] = df_25["년월"].astype(str).str[2:].astype(int)
+    df_25["분기"] = df_25["월"].apply(lambda m: (m - 1) // 3 + 1)
 
-# # 데이터 로딩
-# df = load_and_process_data(['년월', '운수사'])
+    # 2. 2025년 & 해당 운수사만 필터링
+    df_25 = df_25[(df_25["년"] == 25) & (df_25["운수사"] == selected_company)]
 
-# # UI 선택 영역
-# selected_month = st.selectbox("📅 년월 선택", sorted(df['년월'].unique()))
-# selected_company = st.selectbox("🚍 운수사 선택", sorted(df['운수사'].unique()))
+    # 3. 분기별 운전자 평균 가중달성율 계산
+    grouped = df_25.groupby(["운전자ID", "운전자이름", "분기"])["가중달성율"].mean().reset_index()
+    certified = grouped[grouped["가중달성율"] >= 95]
 
-# # 항목별 정렬 기준 정의
-# metric_info = {
-#     '달성율': False,
-#     '웜업률': True,
-#     '공회전율': True,
-#     '탄력운전비율': False,
-#     '평균속도': False,
-#     '급가속(회/100km)': True,
-#     '급감속(회/100km)': True
-# }
+    # 4. 인증자 명단 출력
+    if not certified.empty:
+        for q in sorted(certified["분기"].unique()):
+            st.markdown(f"#### 🏅 2025년 {q}분기 인증자")
+            q_df = certified[certified["분기"] == q]
+            st.dataframe(q_df[["운전자ID", "운전자이름", "가중달성율"]].round(2), use_container_width=True)
+    else:
+        st.info("해당 운수사에서 2025년 인증 대상자가 없습니다.")
 
-# # 선택된 년월 데이터 필터링 후 순위 계산
-# df_month = df[df['년월'] == selected_month].copy()
-# for col, asc in metric_info.items():
-#     df_month[f"{col}_순위"] = df_month[col].rank(ascending=asc, method="min")
+    # ✅ 인증율 요약 (운전자이름이 NULL인 경우 제외)
+    st.subheader("📊 인증 대상자 비율")
 
-# # 선택 운수사 데이터 추출
-# target = df_month[df_month['운수사'] == selected_company].iloc[0]
+    df_named = df_25[df_25["운전자이름"].notnull()]
+    driver_base = df_named.groupby(["운전자ID", "운전자이름", "분기"]).size().reset_index().rename(columns={0: "횟수"})
 
-# # 결과 UI 출력
-# st.markdown(f"### 🚩 {selected_month}월 - **{selected_company}** 항목별 순위")
-# cols = st.columns(len(metric_info))
-# for i, (metric, _) in enumerate(metric_info.items()):
-#     rank = int(target[f"{metric}_순위"])
-#     color = get_color_by_rank(rank)
-#     with cols[i]:
-#         st.markdown(f"""
-#         <div style='text-align:center; padding:10px; background:{color}; border-radius:50%; 
-#                      width:100px; height:100px; display:flex; flex-direction:column; 
-#                      justify-content:center; align-items:center; margin:auto;'>
-#             <b style='font-size:24px;'>{rank}위</b>
-#             <div style='font-size:12px;'>{metric}</div>
-#         </div>
-#         """, unsafe_allow_html=True)
+    certified_count = certified.groupby("분기").size().reset_index().rename(columns={0: "인증자수"})
+    total_count = driver_base.groupby("분기").size().reset_index().rename(columns={0: "전체운전자수"})
 
-# # =====================
-# # 인천 전체 보고서 보기 구조 (항목별로 다시 계산한 평균)
-# # =====================
-# st.markdown("---")
-# st.markdown(f"### 📈 {selected_company} vs 인천 전체 평균 (지표별 추이)")
+    summary = pd.merge(total_count, certified_count, on="분기", how="left").fillna(0)
+    summary["인증율(%)"] = (summary["인증자수"] / summary["전체운전자수"] * 100).round(1)
 
-# compare_metrics = ['웜업률', '공회전율', '급감속(회/100km)', '평균속도']
-# # 인천 전체 지표 재계산 (월별로 다시 계산)
+    st.dataframe(summary, use_container_width=True)
 
-# df_incheon = load_and_process_data(['년월'])
-# df_incheon = df_incheon[['년월'] + compare_metrics]
+    # ✅ 인증자 명단 다운로드 (Excel)
+    st.subheader("⬇ 인증자 명단 다운로드")
 
-# df_target = df[df['운수사'] == selected_company][['년월'] + compare_metrics]
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        for q in sorted(certified["분기"].unique()):
+            q_df = certified[certified["분기"] == q][["운전자ID", "운전자이름", "가중달성율"]].copy()
+            q_df.to_excel(writer, index=False, sheet_name=f"{q}분기인증자")
+        writer.save()
+        excel_data = output.getvalue()
+
+    st.download_button(
+        label="📥 인증자 명단 Excel 다운로드",
+        data=excel_data,
+        file_name=f"{selected_company}_2025_인증자명단.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 
-# # 선 그래프 출력
-# for metric in compare_metrics:
-#     fig = go.Figure()
-#     fig.add_trace(go.Scatter(x=df_incheon['년월'], y=df_incheon[metric], mode='lines+markers', name='인천 평균'))
-#     fig.add_trace(go.Scatter(x=df_target['년월'], y=df_target[metric], mode='lines+markers', name=selected_company))
-#     fig.update_layout(title=f"📊 {metric} 추이", xaxis_title='년월', yaxis_title=metric)
-#     st.plotly_chart(fig, use_container_width=True)
+elif menu == "6. ID 조회":
+    st.header("🆔 ID 조회")
+    # 파일 로드
+    def load_data():
+        file_path = "인천ID.xlsx"
+        xls = pd.ExcelFile(file_path)
+        df = pd.read_excel(xls, sheet_name='ID목록')
+        return df
+
+    df = load_data()
+
+    # '퇴사여부' 컬럼의 NaN 값을 빈 문자열로 변경
+    df['퇴사여부'] = df['퇴사여부'].fillna('')
+
+    # Streamlit UI 설정
+    st.title("👥운전자 명단 조회")
+
+    # 운수사 선택 (맨 앞에 '운수사를 선택해주세요' 추가)
+    driver_companies = ["운수사를 선택해주세요"] + list(df['운수사'].unique())
+    selected_company = st.selectbox("운수사를 선택하세요", driver_companies, index=0)
+
+    # 선택된 운수사가 '운수사를 선택해주세요'가 아닐 때만 필터링 실행
+    if selected_company != "운수사를 선택해주세요":
+        df_filtered = df[df['운수사'] == selected_company].reset_index(drop=True)  # 기존 인덱스 제거 후 재정렬
+        df_filtered.insert(0, "번호", df_filtered.index + 1)  # 새로운 인덱스 추가 (1부터 시작)
+
+        # 검색창 추가 (이름 & ID 검색 가능)
+        search_query = st.markdown("**운전자 이름** 또는 **ID**를 입력하세요:")
+        search_query = st.text_input("")
+
+        if search_query:
+            df_filtered = df_filtered[
+                df_filtered['운전자이름'].str.contains(search_query, na=False, case=False) |
+                df_filtered['운전자ID'].astype(str).str.contains(search_query, na=False, case=False)
+            ].reset_index(drop=True)  # 검색 후에도 인덱스 다시 설정
+            #df_filtered.insert(0, "번호", df_filtered.index + 1)  # 번호 다시 설정
+
+        # 결과 출력 (기본 인덱스 숨기기)
+        st.dataframe(df_filtered, hide_index=True)
+    else:
+        st.write("운수사를 선택하면 운전자 명단이 표시됩니다.")
+
+    # 예시: st.dataframe(data_sheets["ID"])
+
+elif menu == "7. 차량정보확인":
+    st.header("🚐 차량정보확인")
+    # 예시: st.dataframe(data_sheets["차량별"])
+
+elif menu == "8. A/S 현황":
+    st.header("🛠 A/S 현황")
+    # 예시: st.dataframe(data_sheets["A/S"])
+
+elif menu == "9. 운전자등급":
+    st.header("⭐ 운전자등급")
+    # 예시: st.dataframe(data_sheets["운전자별"])
+
+elif menu == "10. 개별분석표":
+    st.header("📌 개별분석표")
+    # 예시: st.dataframe(data_sheets["운전자별"])
+
+# 사용자가 선택한 운수사 출력 (디버깅용)
+st.sidebar.markdown(f"선택한 운수사: **{selected_company}**")
+
