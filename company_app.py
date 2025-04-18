@@ -442,7 +442,7 @@ if selected_company != "운수사를 선택해주세요":
             # 강조 컬럼 배경색 지정 함수
             def highlight_yellow(s):
                 color_cols = ['처리여부', '수신일', '처리일', '적용사항']
-                return ['background-color: #fff8b3' if s.name in color_cols else '' for _ in s]
+                return ['background-color: #fff8b3; font-weight: bold;' if s.name in color_cols else '' for _ in s]
 
             styled_df = df_display.style.hide(axis="index").apply(highlight_yellow, axis=1)
 
