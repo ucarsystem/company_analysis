@@ -78,15 +78,22 @@ selected_company = st.sidebar.selectbox("운수사를 선택하세요",
 if selected_company != "운수사를 선택해주세요":
 
     # 엑셀 파일 로딩 함수
-    @st.cache_data
-    def load_excel_data(file_path):
-        xls = pd.ExcelFile(file_path)
-        sheet_dict = {sheet_name: xls.parse(sheet_name) for sheet_name in xls.sheet_names}
-        return sheet_dict
+    # @st.cache_data
+    # def load_excel_data(file_path):
+    #     xls = pd.ExcelFile(file_path)
+    #     sheet_dict = {sheet_name: xls.parse(sheet_name) for sheet_name in xls.sheet_names}
+    #     return sheet_dict
 
     # 엑셀 파일 경로 설정
-    excel_file_path = "company_total.xlsx"  
-    data_sheets = load_excel_data(excel_file_path) #시트명으로 들어가짐 ex. data_sheets['차량별']
+    # excel_file_path = "company_total.xlsx"  
+    # data_sheets = load_excel_data(excel_file_path) #시트명으로 들어가짐 ex. data_sheets['차량별']
+
+    google_excel_url = "https://drive.google.com/uc?export=download&id=1QeM7mK92DkQWOXNHp6SSX66MZa8Enfrh"
+    @st.cache_data
+    def load_google_excel(url):
+        xls = pd.ExcelFile(url)
+        return {sheet: xls.parse(sheet) for sheet in xls.sheet_names}
+    data_sheets = load_google_excel(google_excel_url)
 
     # 함수
     @st.cache_data
