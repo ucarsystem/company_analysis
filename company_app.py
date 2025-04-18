@@ -78,22 +78,28 @@ selected_company = st.sidebar.selectbox("운수사를 선택하세요",
 if selected_company != "운수사를 선택해주세요":
 
     # 엑셀 파일 로딩 함수
-    # @st.cache_data
-    # def load_excel_data(file_path):
-    #     xls = pd.ExcelFile(file_path)
-    #     sheet_dict = {sheet_name: xls.parse(sheet_name) for sheet_name in xls.sheet_names}
-    #     return sheet_dict
+    @st.cache_data
+    def load_excel_data(file_path):
+        xls = pd.ExcelFile(file_path)
+        sheet_dict = {sheet_name: xls.parse(sheet_name) for sheet_name in xls.sheet_names}
+        return sheet_dict
 
     # 엑셀 파일 경로 설정
-    # excel_file_path = "company_total.xlsx"  
-    # data_sheets = load_excel_data(excel_file_path) #시트명으로 들어가짐 ex. data_sheets['차량별']
+    #전체 파일
+    excel_file_path = "company_total.xlsx"  
+    data_sheets = load_excel_data(excel_file_path) #시트명으로 들어가짐 ex. data_sheets['차량별']
 
-    google_excel_url = "https://drive.google.com/uc?export=download&id=1QeM7mK92DkQWOXNHp6SSX66MZa8Enfrh"
-    @st.cache_data
-    def load_google_excel(url):
-        xls = pd.ExcelFile(url)
-        return {sheet: xls.parse(sheet) for sheet in xls.sheet_names}
-    data_sheets = load_google_excel(google_excel_url)
+    #연료절감대장(차량관리, as현황)
+    carinfo_as_path = "car_info&as.xlsx"  
+    carinfo_as_sheets = load_excel_data(carinfo_as_path)
+
+    #구글시트 이용용
+    # google_excel_url = "https://drive.google.com/uc?export=download&id=1QeM7mK92DkQWOXNHp6SSX66MZa8Enfrh"
+    # @st.cache_data
+    # def load_google_excel(url):
+    #     xls = pd.ExcelFile(url)
+    #     return {sheet: xls.parse(sheet) for sheet in xls.sheet_names}
+    # data_sheets = load_google_excel(google_excel_url)
 
     # 함수
     @st.cache_data
@@ -332,13 +338,16 @@ if selected_company != "운수사를 선택해주세요":
     elif menu == "6. ID 조회":
         st.header("🆔 ID 조회")
         # 파일 로드
-        def load_data():
-            file_path = "인천ID.xlsx"
-            xls = pd.ExcelFile(file_path)
-            df = pd.read_excel(xls, sheet_name='ID목록')
-            return df
+        # def load_data():
+        #     file_path = "인천ID.xlsx"
+        #     xls = pd.ExcelFile(file_path)
+        #     df = pd.read_excel(xls, sheet_name='ID목록')
+        #     return df
+        
+        id_file_path = "인천ID.xlsx"
+        data_id = load_excel_data(id_file_path)
 
-        df = load_data()
+        df = data_id['ID목록']
 
         # '퇴사여부' 컬럼의 NaN 값을 빈 문자열로 변경
         df['퇴사여부'] = df['퇴사여부'].fillna('')
@@ -370,11 +379,44 @@ if selected_company != "운수사를 선택해주세요":
 
     elif menu == "7. 차량정보확인":
         st.header("🚐 차량정보확인")
-        # 예시: st.dataframe(data_sheets["차량별"])
+
+        df_vehicle = carinfo_as_sheets['7. 차량정보확인']
+
+        if df_vehicle is not None:
+            df_filtered = df_vehicle[df_vehicle['운수사'] == selected_company]
+
+            st.markdown("""
+            <div style='text-align:center; font-size:20px; font-weight:bold; margin-bottom:20px;'>
+                연료절감(에코드라이빙) 단말기 차량 대폐(신차)/노선변경 정보
+            </div>
+            <table style='width:100%; border-collapse:collapse; font-size:13px;'>
+                <thead>
+                    <tr style='background-color:#f2f2f2; text-align:center;'>
+                        <th>순번</th><th>차량번호</th><th>(*)구분</th><th>노선</th><th>운행 종류별</th><th>운행 개시일</th>
+                        <th>차량유형</th><th>유종</th><th colspan='3'>(**)차량정보</th>
+                        <th>자박지</th><th>처리여부</th><th>수신일</th><th>처리일</th><th>적용사항</th>
+                    </tr>
+                    <tr style='background-color:#f9f9f9; text-align:center;'>
+                        <th colspan='8'></th>
+                        <th>차량모델</th><th>원동기형식</th><th>최초등록일</th>
+                        <th colspan='5'></th>
+                    </tr>
+                </thead>
+            </table>
+            """, unsafe_allow_html=True)
+        
+            df_display = df_filtered[[col for col in df_filtered.columns]]
+
+            st.dataframe(df_display, use_container_width=True)
+        else:
+            st.warning("📂 '차량정보를 제공하지 않았습니다.' ")
 
     elif menu == "8. A/S 현황":
         st.header("🛠 A/S 현황")
-        # 예시: st.dataframe(data_sheets["A/S"])
+
+        
+
+        carinfo_as_sheets['8. AS현황']
 
     elif menu == "9. 운전자등급":
         st.header("⭐ 운전자등급")
