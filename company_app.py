@@ -383,38 +383,52 @@ if selected_company != "운수사를 선택해주세요":
         df_vehicle = carinfo_as_sheets['7. 차량정보확인']
 
         if df_vehicle is not None:
-            df_filtered = df_vehicle[df_vehicle['운수사'] == selected_company]
+            df_filtered = df_vehicle[df_vehicle['운수사'] == selected_company].copy()
 
-            st.markdown("""
-            <div style='text-align:center; font-size:20px; font-weight:bold; margin-bottom:20px;'>
-                연료절감(에코드라이빙) 단말기 차량 대폐(신차)/노선변경 정보
-            </div>
-            <table style='width:100%; border-collapse:collapse; font-size:13px;'>
-                <thead>
-                    <tr style='background-color:#f2f2f2; text-align:center;'>
-                        <th>순번</th><th>차량번호</th><th>(*)구분</th><th>노선</th><th>운행 종류별</th><th>운행 개시일</th>
-                        <th>차량유형</th><th>유종</th><th colspan='3'>(**)차량정보</th>
-                        <th>자박지</th><th>처리여부</th><th>수신일</th><th>처리일</th><th>적용사항</th>
-                    </tr>
-                    <tr style='background-color:#f9f9f9; text-align:center;'>
-                        <th colspan='8'></th>
-                        <th>차량모델</th><th>원동기형식</th><th>최초등록일</th>
-                        <th colspan='5'></th>
-                    </tr>
-                </thead>
-            </table>
-            """, unsafe_allow_html=True)
-        
+            #순번 새로 부여
+            df_filtered.insert(0, "순번", range(1, len(df_filtered) + 1))
+
+            # 날짜형 컬럼 정리: 시간 제거, None은 빈 문자열 처리
+            date_cols = ['운행개시일', '운행종료일', '최초등록일', '수신일', '처리일']
+            for col in date_cols:
+                if col in df_filtered.columns:
+                    df_filtered[col] = df_filtered[col].astype(str).str[:10].replace("NaT", "").replace("None", "")
+
+            # None 값을 빈 문자열로 처리
+            df_filtered = df_filtered.fillna("")
+
             df_display = df_filtered[[col for col in df_filtered.columns]]
 
-            st.dataframe(df_display, use_container_width=True)
+            # 헤더 마크다운과 테이블을 하나의 컨테이너에 출력
+            with st.container():
+                st.markdown("""
+                <div style='text-align:center; font-size:20px; font-weight:bold; margin-bottom:10px;'>
+                    연료절감(에코드라이빙) 단말기 차량 대폐(신차)/노선변경 정보
+                </div>
+                <table style='width:100%; border-collapse:collapse; font-size:13px;'>
+                    <thead>
+                        <tr style='background-color:#f2f2f2; text-align:center;'>
+                            <th>순번</th><th>차량번호</th><th>(*)구분</th><th>노선</th><th>운행 종류별</th><th>운행 개시일</th>
+                            <th>차량유형</th><th>유종</th><th colspan='3'>(**)차량정보</th>
+                            <th>자박지</th><th>처리여부</th><th>수신일</th><th>처리일</th><th>적용사항</th>
+                        </tr>
+                        <tr style='background-color:#f9f9f9; text-align:center;'>
+                            <th colspan='8'></th>
+                            <th>차량모델</th><th>원동기형식</th><th>최초등록일</th>
+                            <th colspan='5'></th>
+                        </tr>
+                    </thead>
+                </table>
+                """, unsafe_allow_html=True)
+
+                st.dataframe(df_display, use_container_width=True, height=len(df_display) * 35 + 60)
         else:
-            st.warning("📂 '차량정보를 제공하지 않았습니다.' ")
+            st.warning("📂 '차량정보 변동사항이 없습니다.' ")
 
     elif menu == "8. A/S 현황":
         st.header("🛠 A/S 현황")
 
-        
+
 
         carinfo_as_sheets['8. AS현황']
 
