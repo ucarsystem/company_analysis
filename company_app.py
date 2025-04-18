@@ -454,6 +454,78 @@ if selected_company != "운수사를 선택해주세요":
     elif menu == "8. A/S 현황":
         st.header("🛠 A/S 현황")
 
+        df_as = carinfo_as_sheets['7. 차량정보확인']
+
+        if df_as is not None:
+            df_filtered = df_as[df_as['운수사'] == selected_company].copy()
+
+            #순번 새로 부여
+            df_filtered.insert(0, "순번", range(1, len(df_filtered) + 1))
+
+            # 날짜형 컬럼 정리: 시간 제거, None은 빈 문자열 처리
+            date_cols = ['접수일자', '발생일시', '처리일', '처리일']
+            for col in date_cols:
+                if col in df_filtered.columns:
+                    df_filtered[col] = df_filtered[col].astype(str).str[:10].replace("NaT", "").replace("None", "")
+
+            # None 값을 빈 문자열로 처리
+            df_filtered = df_filtered.fillna("")
+
+
+            df_display = df_filtered[['운수사', '접수일자', '노선', '차량번호', '운행사원', '발생일시', '증상', '빈도', '비고', '처리여부', '처리일', '적용사항']]
+
+            # 헤더 마크다운과 테이블을 하나의 컨테이너에 출력
+            # with st.container():
+            #     st.markdown("""
+            #     <div style='text-align:center; font-size:20px; font-weight:bold; margin-bottom:10px;'>
+            #         연료절감(에코드라이빙) 단말기 차량 대폐(신차)/노선변경 정보
+            #     </div>
+            #     <table style='width:100%; border-collapse:collapse; font-size:13px;'>
+            #         <thead>
+            #             <tr style='background-color:#f2f2f2; text-align:center;'>
+            #                 <th>순번</th><th>차량번호</th><th>(*)구분</th><th>노선</th><th>운행 종류별</th><th>운행 개시일</th>
+            #                 <th>차량유형</th><th>유종</th><th colspan='3'>(**)차량정보</th>
+            #                 <th>자박지</th><th>처리여부</th><th>수신일</th><th>처리일</th><th>적용사항</th>
+            #             </tr>
+            #             <tr style='background-color:#f9f9f9; text-align:center;'>
+            #                 <th colspan='8'></th>
+            #                 <th>차량모델</th><th>원동기형식</th><th>최초등록일</th>
+            #                 <th colspan='5'></th>
+            #             </tr>
+            #         </thead>
+            #     </table>
+            #     """, unsafe_allow_html=True)
+
+            # 스타일 지정 (가독성 + 특정 컬럼 강조)
+            st.markdown("""
+                <style>
+                .stDataFrame thead tr th {
+                    background-color: #f0f0f0;
+                    font-weight: bold;
+                    text-align: center;
+                }
+                .stDataFrame td {
+                    text-align: center;
+                    font-size: 13px;
+                }
+                .stDataFrame tbody tr:hover {
+                    background-color: #e6f2ff;
+                }
+                </style>
+            """, unsafe_allow_html=True)
+
+            # 강조 컬럼 배경색 지정 함수
+            def highlight_yellow(s):
+                color_cols = ['처리여부', '처리일', '적용사항']
+                return ['background-color: #fff8b3; font-weight: bold;' if s.name in color_cols else '' for _ in s]
+
+            styled_df = df_display.style.hide(axis="index").apply(highlight_yellow, axis=1)
+
+            st.dataframe(styled_df, use_container_width=True, height=len(df_display) * 35 + 60)
+
+        else:
+            st.warning("📂 'AS접수사항이 없습니다.' ")
+
 
 
         carinfo_as_sheets['8. AS현황']
