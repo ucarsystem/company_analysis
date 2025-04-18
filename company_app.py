@@ -169,8 +169,12 @@ if selected_company != "운수사를 선택해주세요":
         st.header("📊 대시보드")
         st.title("📊 운수사 관리자용 분석 대시보드")
 
-        # 데이터 로딩
-        raw_df = load_data(data_sheets["차량별"])
+        # 데이터 병합 처리 (24년 + 25년)
+        df_24 = load_data(data_sheets.get("차량별(24년)"))
+        df_25 = load_data(data_sheets.get("차량별(25년)"))
+        raw_df = pd.concat([df_24, df_25], ignore_index=True)
+        
+        #속도필터반영
         df_company = process_data(raw_df, ['년월', '운수사'])
         df_incheon = process_data(raw_df, ['년월'])
 
@@ -250,7 +254,7 @@ if selected_company != "운수사를 선택해주세요":
         st.header("🏆 인증현황")
 
         df_24_cert = data_sheets["5. 24년인증현황"]
-        df_driver = data_sheets["운전자별"]
+        df_25 = data_sheets["운전자별(25년)"]
 
         # ✅ 2024년 인증자 명단
         st.subheader("⭐ 2024년 인증 대상자 명단 ⭐")
@@ -264,10 +268,10 @@ if selected_company != "운수사를 선택해주세요":
         st.subheader("⭐ 2025년 분기별 인증 대상자 명단 ⭐")
 
         # 1. 년월 → 년/월/분기 분리
-        df_25 = df_driver.copy()
+        df_25 = df_25[df_25["년월"].astype(str).str.len() == 4].copy()
         df_25["년"] = df_25["년월"].astype(str).str[:2].astype(int)
         df_25["월"] = df_25["년월"].astype(str).str[2:].astype(int)
-        df_25["분기"] = df_25["월"].apply(lambda m: (m - 1) // 3 + 1)
+        df_25["분기"] = df_25["월"].apply(lambda x: (x - 1) // 3 + 1)
 
         # 2. 2025년 & 해당 운수사만 필터링
         df_25 = df_25[(df_25["년"] == 25) & (df_25["운수사"] == selected_company)]
@@ -299,23 +303,23 @@ if selected_company != "운수사를 선택해주세요":
 
         st.dataframe(summary, use_container_width=True)
 
-        # ✅ 인증자 명단 다운로드 (Excel)
-        st.subheader("⬇ 인증자 명단 다운로드")
+        # ✅ 인증자 명단 다운로드 (Excel) 다음에 시도해보기
+        # st.subheader("⬇ 인증자 명단 다운로드")
 
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            for q in sorted(certified["분기"].unique()):
-                q_df = certified[certified["분기"] == q][["운전자ID", "운전자이름", "가중달성율"]].copy()
-                q_df.to_excel(writer, index=False, sheet_name=f"{q}분기인증자")
-            writer.save()
-            excel_data = output.getvalue()
+        # output = io.BytesIO()
+        # with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        #     for q in sorted(certified["분기"].unique()):
+        #         q_df = certified[certified["분기"] == q][["운전자ID", "운전자이름", "가중달성율"]].copy()
+        #         q_df.to_excel(writer, index=False, sheet_name=f"{q}분기인증자")
+        #     writer.save()
+        #     excel_data = output.getvalue()
 
-        st.download_button(
-            label="📥 인증자 명단 Excel 다운로드",
-            data=excel_data,
-            file_name=f"{selected_company}_2025_인증자명단.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+        # st.download_button(
+        #     label="📥 인증자 명단 Excel 다운로드",
+        #     data=excel_data,
+        #     file_name=f"{selected_company}_2025_인증자명단.xlsx",
+        #     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        # )
 
 
     elif menu == "6. ID 조회":
