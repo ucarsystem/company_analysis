@@ -620,7 +620,7 @@ if selected_company != "운수사를 선택해주세요":
             )
 
             # ✅ 목표달성율 내림차순 정렬
-            df_display = df_display.sort_values(by="목표달성율(숫자)", ascending=False).drop(columns=["목표달성율"])
+            df_display = df_display.sort_values(by="목표달성율", ascending=False).drop(columns=["목표달성율"])
 
             #출력
             st.caption(f"총 {len(df_display)}명")
