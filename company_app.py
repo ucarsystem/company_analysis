@@ -547,44 +547,53 @@ if selected_company != "운수사를 선택해주세요":
             st.subheader("📊 등급별 비중")
 
             # 등급별 비중
-            grade_counts = Counter(df_nonull["등급"])
-            labels = ["S", "A", "B", "C", "D", "F"]
-            values = [grade_counts.get(g, 0) for g in labels]
-            colors = ["#00B050", "#00B050", "#0070C0", "#0070C0", "#FF0000", "#FF0000"]
+            grade_order = ["S", "A", "B", "C", "D", "F"]
+            grade_counts = df_nonull["등급"].value_counts().reindex(grade_order, fill_value=0).reset_index()
+            grade_counts.columns = ["등급", "인원수"]
+
+            # 색상 매핑 (S~F 순)
+            colors = {
+                "S": "#006400",  # 진초록
+                "A": "#00B050",  # 초록
+                "B": "#003399",  # 진파랑
+                "C": "#0070C0",  # 파랑
+                "D": "#B22222",  # 진빨강
+                "F": "#FF0000",  # 빨강
+            }
+            # grade_counts = Counter(df_nonull["등급"])
+            # labels = ["S", "A", "B", "C", "D", "F"]
+            # values = [grade_counts.get(g, 0) for g in labels]
+            # colors = ["#00B050", "#00B050", "#0070C0", "#0070C0", "#FF0000", "#FF0000"]
+
+            # fig = go.Figure(data=[go.Pie(
+            #     labels=labels,
+            #     values=values,
+            #     hole=0.4,
+            #     marker=dict(colors=colors),
+            #     textinfo='label+percent',
+            #     textfont=dict(size=18),
+            # )])
+            # fig.update_layout(title=f"{year}년 {int(month)}월 운전자 등급 비중", legend_title="등급")
+            # st.plotly_chart(fig, use_container_width=True)
+            # grade_counts = df_nonull["등급"].value_counts().reset_index()
+            # grade_counts.columns = ["등급", "인원수"]
 
             fig = go.Figure(data=[go.Pie(
-                labels=labels,
-                values=values,
+                labels=grade_counts["등급"],
+                values=grade_counts["인원수"],
                 hole=0.4,
-                marker=dict(colors=colors),
+                marker=dict(colors=[colors[g] for g in grade_counts["등급"]]),
                 textinfo='label+percent',
                 textfont=dict(size=18),
             )])
             fig.update_layout(title=f"{year}년 {int(month)}월 운전자 등급 비중", legend_title="등급")
             st.plotly_chart(fig, use_container_width=True)
-            # grade_counts = df_nonull["등급"].value_counts().reset_index()
-            # grade_counts.columns = ["등급", "인원수"]
-
-            # fig = px.pie(
-            #     grade_counts,
-            #     values="인원수",
-            #     names="등급",
-            #     title=f"{year}년 {int(month)}월 운전자 등급 비중",
-            #     color_discrete_map = {
-            #         "S": "#00B050",  # 초록
-            #         "A": "#00B050",  # 초록
-            #         "B": "#0070C0",  # 파랑
-            #         "C": "#0070C0",  # 파랑
-            #         "D": "#FF0000",  # 빨강
-            #         "F": "#FF0000",  # 빨강
-            #     }
-            # )
-            # st.plotly_chart(fig, use_container_width=True)
-
+            
             # 3. 운수사별 명단 테이블
             st.subheader("🧾 등급별 명단")
             selected_cols = ["운수사", "노선번호", "운전자이름", "운전자ID", "가중달성율", "등급", "등급설명", "차량번호4", "주행거리(km)"]
-            df_display = df_nonull[selected_cols].fillna("")
+            df_display = df_nonull[selected_cols].fillna("").reset_index(True)
+            df_display = df_display.sort_values(by="가중달성율", ascending=False)
 
             df_display = df_display.rename(columns={
                 '주행거리(km)': '주행거리',
@@ -595,17 +604,21 @@ if selected_company != "운수사를 선택해주세요":
             })
 
             # 순번 추가
-            df_display.insert(0, "순번", range(1, len(df_display) + 1))
+            # df_display.insert(0, "순번", range(1, len(df_display) + 1))
+
+            # 목표달성율 퍼센트 표시+정렬용 숫자 컬럼
 
             # ✅ 목표달성율 퍼센트 표시
-            df_display["목표달성율"] = df_display["목표달성율"].apply(
-                lambda x: f"{round(float(x))}%" if str(x).replace('.', '', 1).isdigit() else x
-            )
+            df_display["목표달성율"] =  df_nonull["목표달성율"].astype(float)
+            df_display["목표달성율"] = df_display["목표달성율"].apply(lambda x: f"{round(x)}%")
 
             # ✅ 주행거리 천단위 쉼표
             df_display["주행거리"] = df_display["주행거리"].apply(
                 lambda x: f"{int(float(x)):,}" if str(x).replace('.', '', 1).isdigit() else x
             )
+
+            # ✅ 목표달성율 내림차순 정렬
+            df_display = df_display.sort_values(by="목표달성율(숫자)", ascending=False).drop(columns=["목표달성율"])
 
             #출력
             st.caption(f"총 {len(df_display)}명")
