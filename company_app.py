@@ -383,10 +383,10 @@ if selected_company != "운수사를 선택해주세요":
         df_vehicle = carinfo_as_sheets['7. 차량정보확인']
 
         if df_vehicle is not None:
-            df_filtered = df_vehicle[df_vehicle['운수사'] == selected_company].copy()
+            df_filtered = df_vehicle[df_vehicle['운수사'] == selected_company].reset_index(drop=True)
 
             #순번 새로 부여
-            df_filtered.insert(0, "순번", range(1, len(df_filtered) + 1))
+            df_filtered.insert(0, "순번", df_filtered.index + 1)
 
             # 날짜형 컬럼 정리: 시간 제거, None은 빈 문자열 처리
             date_cols = ['운행개시일', '운행종료일', '최초등록일', '수신일', '처리일']
@@ -445,7 +445,7 @@ if selected_company != "운수사를 선택해주세요":
 
             styled_df = df_display.style.apply(highlight_yellow, axis=0).hide(axis="index")
 
-            st.dataframe(styled_df, use_container_width=True, height=len(df_display) * 35 + 60)
+            st.dataframe(styled_df, use_container_width=True, height=len(df_display) * 35 + 60, hide_index=True)
 
         else:
             st.warning("📂 '차량정보 변동사항이 없습니다.' ")
@@ -470,7 +470,7 @@ if selected_company != "운수사를 선택해주세요":
             # None 값을 빈 문자열로 처리
             df_filtered = df_filtered.fillna("")
 
-            print_columns = ['순번', '운수사', '접수일자', '노선', '차량번호', '운행사원', '발생일시', '증상', '빈도', '비고', '처리여부', '처리일', '적용사항']
+            print_columns = ['순번', '운수사', '접수일자', '노선', '차량번호', '운행사원', '발생일시', '증상', '비고', '처리여부', '처리일', '적용사항']
 
             df_display = df_filtered[[col for col in print_columns]]
 
@@ -503,12 +503,9 @@ if selected_company != "운수사를 선택해주세요":
         else:
             st.warning("📂 'AS접수사항이 없습니다.' ")
 
-
-
-        carinfo_as_sheets['8. AS현황']
-
     elif menu == "9. 운전자등급":
         st.header("⭐ 운전자등급")
+
         # 예시: st.dataframe(data_sheets["운전자별"])
 
     elif menu == "10. 개별분석표":
