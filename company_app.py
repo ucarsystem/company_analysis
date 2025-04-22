@@ -465,14 +465,14 @@ if selected_company != "운수사를 선택해주세요":
             date_cols = ['접수일자', '발생일시', '처리일']
             for col in date_cols:
                 if col in df_filtered.columns:
-                    df_filtered[col] = df_filtered[col].astype(str).str[:10].replace("NaT", "").replace("None", "")
+                    df_filtered[col] = df_filtered[col].fillna("").astype(str).str[:10].replace(["NaT", "nan", "None"], "")
 
             # None 값을 빈 문자열로 처리
             df_filtered = df_filtered.fillna("")
 
             print_columns = ['순번', '운수사', '접수일자', '노선', '차량번호', '운행사원', '발생일시', '증상', '빈도', '비고', '처리여부', '처리일', '적용사항']
 
-            df_display = df_filtered[print_columns]
+            df_display = df_filtered[[col for col in print_columns]]
 
             # 스타일 지정 (가독성 + 특정 컬럼 강조)
             st.markdown("""
@@ -494,10 +494,9 @@ if selected_company != "운수사를 선택해주세요":
 
             # 강조 컬럼 배경색 지정 함수
             def highlight_yellow(s):
-                color_cols = ['처리여부', '처리일', '적용사항']
-                return ['background-color: #fff8b3; font-weight: bold;' if s.name in color_cols else '' for _ in s]
+                return ['background-color: #fff8b3' if s.name in ['처리여부', '처리일', '적용사항'] else [''] * len(s)][0]
 
-            styled_df = df_display.style.hide(axis="index").apply(highlight_yellow, axis=1)
+            styled_df = df_display.style.apply(highlight_yellow, axis=0).hide(axis="index")
 
             st.dataframe(styled_df, use_container_width=True, height=len(df_display) * 35 + 60)
 
