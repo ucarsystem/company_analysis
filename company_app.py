@@ -588,7 +588,7 @@ if selected_company != "운수사를 선택해주세요":
             )])
             fig.update_layout(title=f"{year}년 {int(month)}월 운전자 등급 비중", legend_title="등급")
             st.plotly_chart(fig, use_container_width=True)
-            
+
             # 3. 운수사별 명단 테이블
             st.subheader("🧾 등급별 명단")
             selected_cols = ["운수사", "노선번호", "운전자이름", "운전자ID", "가중달성율", "등급", "등급설명", "차량번호4", "주행거리(km)"]
@@ -610,7 +610,9 @@ if selected_company != "운수사를 선택해주세요":
 
             # ✅ 목표달성율 퍼센트 표시
             df_display["목표달성율"] =  df_nonull["목표달성율"].astype(float)
-            df_display["목표달성율"] = df_display["목표달성율"].apply(lambda x: f"{round(x)}%")
+            df_display["목표달성율"] = df_display["목표달성율"].apply(
+                lambda x: f"{round(float(x) * 100)}%" if str(x).replace('.', '', 1).isdigit() else x
+            )
 
             # ✅ 주행거리 천단위 쉼표
             df_display["주행거리"] = df_display["주행거리"].apply(
