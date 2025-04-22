@@ -592,7 +592,7 @@ if selected_company != "운수사를 선택해주세요":
             # 3. 운수사별 명단 테이블
             st.subheader("🧾 등급별 명단")
             selected_cols = ["운수사", "노선번호", "운전자이름", "운전자ID", "가중달성율", "등급", "등급설명", "차량번호4", "주행거리(km)"]
-            df_display = df_nonull[selected_cols].fillna("").reset_index(True)
+            df_display = df_nonull[selected_cols].fillna("")
             df_display = df_display.sort_values(by="가중달성율", ascending=False)
 
             df_display = df_display.rename(columns={
