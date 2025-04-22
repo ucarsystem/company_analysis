@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
 import io
 #페이지 설정 (가장 맨위에 호출시켜야함!)
 st.set_page_config(page_title="운수사 관리자 페이지", layout="wide")
@@ -498,13 +499,122 @@ if selected_company != "운수사를 선택해주세요":
 
             styled_df = df_display.style.apply(highlight_yellow, axis=0).hide(axis="index")
 
-            st.dataframe(styled_df, use_container_width=True, height=len(df_display) * 35 + 60)
+            st.dataframe(styled_df, use_container_width=True, height=len(df_display) * 35 + 60, hide_index=True)
 
         else:
             st.warning("📂 'AS접수사항이 없습니다.' ")
 
     elif menu == "9. 운전자등급":
-        st.header("⭐ 운전자등급")
+        st.header(f"⭐ {selected_company} 운전자등급")
+
+        # 📅 년/월 선택
+        year = st.selectbox("년도 선택", ["2024", "2025"])
+        month = st.selectbox("월 선택", [f"{i:02d}" for i in range(1, 13)])
+        ym = int(year[2:] + month)
+
+        #등급별 색깔 함수
+        def color_by_grade(val):
+            color_map = {
+                "S": "#00B050",  # 초록
+                "A": "#00B050",  # 초록
+                "B": "#0070C0",  # 파랑
+                "C": "#0070C0",  # 파랑
+                "D": "#FF0000",  # 빨강
+                "F": "#FF0000",  # 빨강
+            }
+            color = color_map.get(val, "")
+            return f"background-color: {color}; color: white"
+        # 텍스트용
+        def get_grade_color(val):
+            color_map = {
+                "S": "#00B050",  # 초록
+                "A": "#00B050",
+                "B": "#0070C0",
+                "C": "#0070C0",
+                "D": "#FF0000",
+                "F": "#FF0000",
+            }
+            return color_map.get(val, "#000")
+
+        #시트 선택
+        sheet_name = f"운전자별({year[:2]}{year[2:]})"
+        df_person = data_sheets[sheet_name]
+
+        if df_person is not None:
+            df_person = df_person.copy()
+            df_person = df_person[(df_person["년월"]==ym) & (df_person["운수사"] == selected_company)]
+
+            #등급설명 추가
+            grade_desc = {"S":"최우수", "A": "우수", "B": "양호", "C": "보통", "D": "주의", "F": "경고"}
+            df_person['등급설명'] = df_person['등급'].map(grade_desc)
+
+            # 1. 등급 비중 시각화
+            st.subheader("📊 등급별 비중")
+
+            #null제외
+            df_nonull = df_person[df_person["운전자이름"].notnull()]
+
+            #운수사별 평균 등급
+
+            # 등급 → 점수 변환
+            grade_to_score = {"S": 6, "A": 5, "B": 4, "C": 3, "D": 2, "F": 1}
+            score_to_grade = {v: k for k, v in grade_to_score.items()}
+
+            avg_score = df_nonull["등급"].map(grade_to_score).mean()
+            rounded = int(round(avg_score))
+            avg_grade = score_to_grade.get(rounded, "N/A")
+            color = get_grade_color(avg_grade)
+
+            # 텍스트로 강조 출력
+            st.markdown(f"""
+            <div style="font-size:20px; font-weight:bold;">
+            <span style="color: #444;">{year}년 {int(month)}월 평균등급 :</span>
+            <span style="color:{color};"> {avg_grade} 등급</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # 등급별 비중
+            grade_counts = df_nonull["등급"].value_counts().reset_index()
+            grade_counts.columns = ["등급", "인원수"]
+
+            fig = px.pie(
+                grade_counts,
+                values="인원수",
+                names="등급",
+                title=f"{year}년 {int(month)}월 운전자 등급 비중",
+                color_discrete_map = {
+                    "S": "#00B050",  # 초록
+                    "A": "#00B050",  # 초록
+                    "B": "#0070C0",  # 파랑
+                    "C": "#0070C0",  # 파랑
+                    "D": "#FF0000",  # 빨강
+                    "F": "#FF0000",  # 빨강
+                }
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+            # 2. 운수사별 명단 테이블
+            st.subheader("🧾 등급별 명단")
+            selected_cols = ["운수사", "노선번호", "운전자이름", "운전자ID", "가중달성율", "등급", "등급설명", "주운행차량", "주행거리(km)"]
+            df_display = df_person[selected_cols].fillna("")
+
+            df_display = df_display.rename(columns={
+                '주행거리(km)': '주행거리',
+                '노선번호' : '노선',
+                '운전자이름' : '사원명',
+                '가중달성율' : '목표달성율'
+            })
+
+            st.dataframe(
+                df_display.style.applymap(color_by_grade, subset=["등급"]).hide(axis="index"),
+                use_container_width=True,
+                height=len(df_display) * 35 + 60
+            )
+            
+        else:
+            st.markdown(f"❗ '{selected_company}' 의 자료가 없습니다.")
+
+
 
         # 예시: st.dataframe(data_sheets["운전자별"])
 
