@@ -604,9 +604,6 @@ if selected_company != "운수사를 선택해주세요":
                 '차량번호4' : '주운행차량'
             })
 
-            # 순번 추가
-            # df_display.insert(0, "순번", range(1, len(df_display) + 1))
-
             # 목표달성율 퍼센트 표시+정렬용 숫자 컬럼
 
             # ✅ 목표달성율 퍼센트 표시
