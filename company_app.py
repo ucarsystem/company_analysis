@@ -446,7 +446,7 @@ if selected_company != "운수사를 선택해주세요":
 
             styled_df = df_display.style.hide(axis="index").apply(highlight_yellow, axis=1)
 
-            st.dataframe(styled_df, use_container_width=True, height=len(df_display) * 35 + 60)
+            st.dataframe(styled_df.hide(axis='index'), use_container_width=True, height=len(df_display) * 35 + 60)
 
         else:
             st.warning("📂 '차량정보 변동사항이 없습니다.' ")
@@ -454,7 +454,7 @@ if selected_company != "운수사를 선택해주세요":
     elif menu == "8. A/S 현황":
         st.header("🛠 A/S 현황")
 
-        df_as = carinfo_as_sheets['7. 차량정보확인']
+        df_as = carinfo_as_sheets['8. AS현황']
 
         if df_as is not None:
             df_filtered = df_as[df_as['운수사'] == selected_company].copy()
@@ -463,7 +463,7 @@ if selected_company != "운수사를 선택해주세요":
             df_filtered.insert(0, "순번", range(1, len(df_filtered) + 1))
 
             # 날짜형 컬럼 정리: 시간 제거, None은 빈 문자열 처리
-            date_cols = ['접수일자', '발생일시', '처리일', '처리일']
+            date_cols = ['접수일자', '발생일시', '처리일']
             for col in date_cols:
                 if col in df_filtered.columns:
                     df_filtered[col] = df_filtered[col].astype(str).str[:10].replace("NaT", "").replace("None", "")
@@ -471,7 +471,7 @@ if selected_company != "운수사를 선택해주세요":
             # None 값을 빈 문자열로 처리
             df_filtered = df_filtered.fillna("")
 
-            print_columns = ['운수사', '접수일자', '노선', '차량번호', '운행사원', '발생일시', '증상', '빈도', '비고', '처리여부', '처리일', '적용사항']
+            print_columns = ['순번', '운수사', '접수일자', '노선', '차량번호', '운행사원', '발생일시', '증상', '빈도', '비고', '처리여부', '처리일', '적용사항']
 
             df_display = df_filtered[print_columns]
 
