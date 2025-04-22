@@ -609,7 +609,7 @@ if selected_company != "운수사를 선택해주세요":
             # 목표달성율 퍼센트 표시+정렬용 숫자 컬럼
 
             # ✅ 목표달성율 퍼센트 표시
-            df_display["목표달성율"] =  df_nonull["목표달성율"].astype(float)
+            df_display["목표달성율"] =  df_display["목표달성율"].astype(float)
             df_display["목표달성율"] = df_display["목표달성율"].apply(
                 lambda x: f"{round(float(x) * 100)}%" if str(x).replace('.', '', 1).isdigit() else x
             )
