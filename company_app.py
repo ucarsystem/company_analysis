@@ -515,7 +515,7 @@ if selected_company != "운수사를 선택해주세요":
             return color_map.get(val, "#000")
 
         #시트 선택
-        sheet_name = f"운전자별({year[:2]}{year[2:]})"
+        sheet_name = f"운전자별({year[:2]})"
         df_person = data_sheets[sheet_name]
 
         if df_person is not None:
