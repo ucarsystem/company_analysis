@@ -234,8 +234,11 @@ if selected_company != "운수사를 선택해주세요":
         # 선택 운수사 데이터 추출
         target = df_month[df_month['운수사'] == selected_company].iloc[0]
 
+        
+
         # 결과 UI 출력
-        st.markdown(f"### 🚩 {selected_month[:2]}년 {selected_month[2:]}월 - **{selected_company}** 항목별 순위")
+        st.markdown(f"### 🚩 {selected_month} - **{selected_company}** 항목별 순위")
+        # st.markdown(f"### 🚩 {selected_month[:2]}년 {selected_month[2:]}월 - **{selected_company}** 항목별 순위")
         cols = st.columns(len(metric_info))
         for i, (metric, _) in enumerate(metric_info.items()):
             rank = int(target[f"{metric}_순위"])
