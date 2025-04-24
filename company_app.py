@@ -237,7 +237,7 @@ if selected_company != "운수사를 선택해주세요":
         
 
         # 결과 UI 출력
-        st.markdown(f"### 🚩 {selected_month} - **{selected_company}** 항목별 순위")
+        st.markdown(f"### 🚩 {selected_month.type} - **{selected_company}** 항목별 순위")
         # st.markdown(f"### 🚩 {selected_month[:2]}년 {selected_month[2:]}월 - **{selected_company}** 항목별 순위")
         cols = st.columns(len(metric_info))
         for i, (metric, _) in enumerate(metric_info.items()):
