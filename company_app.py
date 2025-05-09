@@ -56,7 +56,7 @@ menu_items = [
     ("2. 대시보드", "📊"),
     ("3. 운전성향분석표", "📁"),
     ("4. 집중관리명단", "⚠"),
-    ("5. 인증현황", "🏊"),
+    ("5. 인증현황", "🏆"),
     ("6. ID 조회", "🆔"),
     ("7. 차량정보확인", "🚐"),
     ("8. A/S 현황", "🚰"),
@@ -213,7 +213,7 @@ if selected_company != "운수사를 선택해주세요":
 
         # UI 선택 영역
         selected_month = st.selectbox("📅 년월 선택", sorted(df_company['년월'].unique()))
-        selected_company = st.selectbox("🚍 운수사 선택", sorted(df_company['운수사'].unique()))
+        # selected_company = st.selectbox("🚍 운수사 선택", sorted(df_company['운수사'].unique()))
 
         # 항목별 정렬 기준 정의
         metric_info = {
@@ -234,11 +234,10 @@ if selected_company != "운수사를 선택해주세요":
         # 선택 운수사 데이터 추출
         target = df_month[df_month['운수사'] == selected_company].iloc[0]
 
-        
+        ym_str = str(selected_month)
 
         # 결과 UI 출력
-        st.markdown(f"### 🚩 {selected_month.type} - **{selected_company}** 항목별 순위")
-        # st.markdown(f"### 🚩 {selected_month[:2]}년 {selected_month[2:]}월 - **{selected_company}** 항목별 순위")
+        st.markdown(f"### 🚩 {ym_str} - **{selected_company}** 항목별 순위")
         cols = st.columns(len(metric_info))
         for i, (metric, _) in enumerate(metric_info.items()):
             rank = int(target[f"{metric}_순위"])
