@@ -235,9 +235,11 @@ if selected_company != "운수사를 선택해주세요":
         target = df_month[df_month['운수사'] == selected_company].iloc[0]
 
         ym_str = str(selected_month)
+        year_str = ym_str[:2]
+        month_str = ym_str[2:]
 
         # 결과 UI 출력
-        st.markdown(f"### 🚩 {ym_str} - **{selected_company}** 항목별 순위")
+        st.markdown(f"### 🚩 {year_str}년 {month_str}월 - **{selected_company}** 항목별 순위")
         cols = st.columns(len(metric_info))
         for i, (metric, _) in enumerate(metric_info.items()):
             rank = int(target[f"{metric}_순위"])
